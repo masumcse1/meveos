@@ -1,0 +1,123 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- ~ (C) Copyright 2018-2020 Webdrone SAS (https://www.webdrone.fr/) and 
+	contributors. ~ ~ This program is free software: you can redistribute it 
+	and/or modify it under the terms of the ~ GNU Affero General Public License 
+	as published by the Free Software Foundation, either version 3 ~ of the License, 
+	or (at your option) any later version. ~ ~ This program is distributed in 
+	the hope that it will be useful, but WITHOUT ANY WARRANTY; without ~ even 
+	the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. 
+	This program is ~ not suitable for any direct or indirect application in 
+	MILITARY industry See the GNU Affero ~ General Public License for more details. 
+	~ ~ You should have received a copy of the GNU Affero General Public License 
+	along with this program. ~ If not, see <http://www.gnu.org/licenses/>. -->
+
+<databaseChangeLog
+	xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.2.xsd">
+
+	<changeSet author="Tony Alejandro" id="Add  time zone column">
+		<addColumn tableName="meveo_timer">
+			<column name="sc_tz" type="${type.longText}" defaultValue="GMT" />
+		</addColumn>
+	</changeSet>
+	
+	<changeSet author="Clément Bareth" id="#399 - Add script to wf action">
+		<addColumn tableName="wf_action">
+			<column name="action_script" type="bigint">
+				<constraints foreignKeyName="fk_action_script" referencedTableName="meveo_script_instance" referencedColumnNames="id"/>
+			</column>
+		</addColumn>
+	</changeSet>
+	
+	<changeSet author="Clément Bareth" id="#399 - Add script params">
+		<addColumn tableName="wf_action">
+			<column name="script_parameters" type="${type.json}"/>
+		</addColumn>
+	</changeSet>
+
+	<changeSet author="Edward Legaspi" id="Convert to buss entity">
+		<addColumn tableName="remote_repository">
+			<column name="description" type="varchar(100)" />
+		</addColumn>
+		<addColumn tableName="remote_repository">
+			<column name="disabled" type="${type.boolean}" defaultValueNumeric="0">
+				<constraints nullable="false" />
+			</column>
+		</addColumn>
+	</changeSet>
+
+	<changeSet id="#416-20210911" author="EdwardLegaspi">
+		<createTable tableName="service_wsendpoint">
+			<column name="id" type="bigint" autoIncrement="${id.auto}">
+				<constraints nullable="false" primaryKey="true" primaryKeyName="service_wsendpoint_pkey"/>
+			</column>
+			<column name="version" type="int4"/>
+			<column name="disabled" type="${type.boolean}" defaultValueNumeric="0">
+				<constraints nullable="false"/>
+			</column>
+			<column name="creator" type="varchar(100)"/>
+			<column name="updater" type="varchar(100)"/>
+			<column name="created" type="datetime">
+				<constraints nullable="false"/>
+			</column>
+			<column name="updated" type="datetime"/>
+			<column name="code" type="varchar(255)">
+				<constraints nullable="false"/>
+			</column>
+			<column name="description" type="varchar(255)"/>
+			<column name="service_id" type="bigint"/>
+			<column name="secured" type="${type.boolean}" defaultValueNumeric="1">
+				<constraints nullable="false"/>
+			</column>
+		</createTable>
+	</changeSet>
+	
+	<changeSet id="412 - Add default script parameters to custom action" author="Clément Bareth">
+		<addColumn tableName="crm_custom_action">
+			<column name="script_parameters" type="${type.json}"/>
+		</addColumn>
+	</changeSet>
+	
+
+  <changeSet id="467 - Store module json on external table" author="Arthur Grenier">
+		<createTable tableName="meveo_module_source">
+			<column name="id" type="bigint">
+				<constraints foreignKeyName="fk_id_module" referencedTableName="meveo_module" referencedColumnNames="id"/>
+			</column>
+			<column name="module_source" type="${type.json}"/>
+		</createTable>
+		<sql>INSERT INTO meveo_module_source (id, module_source) SELECT id, module_source FROM meveo_module</sql>
+		<dropColumn tableName="meveo_module" columnName="module_source"/>
+	</changeSet>
+	
+	<changeSet id="Add constraint for module_id" author="Arthur Grenier">
+		<addUniqueConstraint tableName="meveo_module_source" columnNames="id" />
+		<addNotNullConstraint tableName="meveo_module_source" columnName="id" />
+	</changeSet>
+
+	<changeSet id="#318 - Generate permissions linked to endpoints" author="Clément Bareth">
+		<dropTable tableName="entity_permission"/>
+		<sql>INSERT INTO adm_permission (id, name, permission, category) SELECT nextval('adm_permission_seq'), 'Execute_Endpoint_' || endpoint.code, 'Execute_Endpoint_' || endpoint.code, null FROM service_endpoint as endpoint WHERE endpoint.secured = 1</sql>
+		<sql>INSERT INTO adm_role (id, version, role_description, role_name) VALUES (-10, 0, 'Role that has execution permission for all endpoints', 'Execute_All_Endpoints')</sql>
+		<insert tableName="adm_role_role">
+			<column name="role_id" valueNumeric="-1"></column>
+			<column name="child_role_id" valueNumeric="-10"></column>
+		</insert>
+		<sql>INSERT INTO adm_role_permission (role_id, permission_id) SELECT -10, permission.id FROM adm_permission as permission WHERE permission.permission LIKE 'Execute_Endpoint_%'</sql>
+	</changeSet>
+	
+	<changeSet id="Remove CRT roles (replaced previously by permissions)" author="Clément Bareth">
+		<sql>DELETE FROM adm_user_role USING adm_role WHERE adm_user_role.role_id = adm_role.id AND adm_role.role_name LIKE 'CRT_%'</sql>
+		<sql>DELETE FROM adm_role WHERE role_name LIKE 'CRT_%'</sql>
+	</changeSet>
+	
+	<changeSet author="Clément Bareth" id="add index on module item">
+		<createIndex indexName="appliesTo_code_type_idx" tableName="meveo_module_item">
+	      <column name="applies_to"/>
+	      <column name="item_type"/>
+	      <column name="item_code"/>
+	  	</createIndex>
+  </changeSet>	
+
+</databaseChangeLog>

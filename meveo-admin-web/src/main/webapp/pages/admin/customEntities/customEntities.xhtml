@@ -1,0 +1,427 @@
+<ui:composition xmlns="http://www.w3.org/1999/xhtml"
+	xmlns:ui="http://xmlns.jcp.org/jsf/facelets"
+	xmlns:f="http://xmlns.jcp.org/jsf/core"
+	xmlns:p="http://primefaces.org/ui"
+	xmlns:h="http://xmlns.jcp.org/jsf/html" xmlns:hftl="http://hftl.org"
+	template="/layout/template.xhtml" xmlns:o="http://omnifaces.org/ui"
+	xmlns:of="http://omnifaces.org/functions"
+	xmlns:fn="http://xmlns.jcp.org/jsp/jstl/functions"
+	xmlns:c="http://xmlns.jcp.org/jsp/jstl/core"
+	xmlns:l="http://www.lapis.com/jsf/exporter">
+
+	<ui:define name="metadata">
+		<f:metadata>
+			<f:event type="preRenderView"
+				listener="#{customEntityInstanceListBean.preRenderView}" />
+			<f:viewParam name="cet"
+				value="#{customEntityInstanceListBean.customEntityTemplateCode}" />
+			<f:viewParam name="cet"
+				value="#{customEntityInstanceBean.customEntityTemplateCode}" />
+			<o:viewAction action="#{customEntityInstanceListBean.initialize()}" />
+		</f:metadata>
+	</ui:define>
+
+	<ui:define name="body">
+	
+		<script type="text/javascript">
+			document.addEventListener("DOMContentLoaded", function(event) {
+			    document.querySelector("[id='searchForm:buttonSearch'").click();
+			});
+		</script>
+
+		<o:importConstants
+			type="org.meveo.model.crm.custom.CustomFieldTypeEnum" />
+		<o:importFunctions
+			type="org.meveo.service.base.MeveoValueExpressionWrapper" var="exp" />
+		<o:importConstants type="org.meveo.model.persistence.DBStorageType" />
+
+		<h:form id="crumbmenuForm">
+			<p:breadCrumb homeDisplay="text" id="crumbmenu">
+				<p:menuitem value="#{messages['menu.catalog']}" disabled="true" />
+				<p:menuitem outcome="customEntities"
+					value="#{customEntityInstanceBean.customEntityTemplateCode}" />
+			</p:breadCrumb>
+		</h:form>
+
+		<hftl:searchPanel
+			label="#{customEntityInstanceListBean.customEntityTemplate.name} #{messages['customEntityInstance.search']}"
+			backingBean="#{customEntityInstanceListBean}" renderNewButton="false">
+
+			<hftl:searchField label="#{messages['BusinessEntity.uuid']}" field="uuid" maxlength="255"/>
+
+			<c:if
+				test="#{customEntityInstanceListBean.customEntityTemplate.storedIn(DBStorageType.SQL)}">
+				<hftl:searchField label="#{messages['BusinessEntity.code']}"
+					field="code"
+					rendered="#{!customEntityInstanceListBean.customEntityTemplate.isStoreAsTable()}" />
+
+				<hftl:searchField label="#{messages['BusinessEntity.description']}"
+					field="description"
+					rendered="#{!customEntityInstanceListBean.customEntityTemplate.isStoreAsTable()}" />
+			</c:if>
+
+			<c:forEach items="#{customEntityInstanceListBean.filterFields}"
+				var="field">
+				<c:if test="#{field.fieldType eq CustomFieldTypeEnum.STRING}">
+					<hftl:searchTextField id="#{field.code}"
+						backingBean="#{customEntityInstanceListBean}"
+						field="#{field.code}"
+						label="#{field.getDescription(customEntityInstanceListBean.currentLocale.ISO3Language)}"
+						maxlength="#{field.maxValue}" />
+				</c:if>
+				<c:if test="#{field.fieldType eq CustomFieldTypeEnum.LONG_TEXT}">
+					<hftl:searchTextField id="#{field.code}"
+						backingBean="#{customEntityInstanceListBean}"
+						field="#{field.code}"
+						label="#{field.getDescription(customEntityInstanceListBean.currentLocale.ISO3Language)}"
+						maxlength="255"
+					/>
+				</c:if>
+				<c:if test="#{field.fieldType eq CustomFieldTypeEnum.DATE}">
+					<hftl:searchDateField id="#{field.code}"
+						backingBean="#{customEntityInstanceListBean}"
+						field="#{field.code}"
+						label="#{field.getDescription(customEntityInstanceListBean.currentLocale.ISO3Language)}"
+						datePattern="#{paramBean.dateFormat}" rangeSearch="true"
+						componentWidth="25" />
+				</c:if>
+				<c:if test="#{field.fieldType eq CustomFieldTypeEnum.DOUBLE}">
+					<hftl:searchNumberField id="#{field.code}"
+						converterId="javax.faces.Double"
+						backingBean="#{customEntityInstanceListBean}"
+						field="${field.code}"
+						label="#{field.getDescription(customEntityInstanceListBean.currentLocale.ISO3Language)}"
+						componentWidth="25" rangeSearch="true" />
+				</c:if>
+				<c:if test="#{field.fieldType eq CustomFieldTypeEnum.LONG}">
+					<hftl:searchNumberField id="#{field.code}"
+						converterId="javax.faces.Long"
+						backingBean="#{customEntityInstanceListBean}"
+						field="${field.code}"
+						label="#{field.getDescription(customEntityInstanceListBean.currentLocale.ISO3Language)}"
+						componentWidth="25" rangeSearch="true" />
+				</c:if>
+
+				<c:if test="#{field.fieldType eq CustomFieldTypeEnum.LIST}">
+					<hftl:decorateFormField fieldId="#{field.code}"
+						label="#{field.getDescription(customEntityInstanceListBean.currentLocale.ISO3Language)}"
+						componentWidth="25">
+						<p:selectOneMenu id="#{field.code}"
+							value="#{customEntityInstanceListBean.filters[field.code]}"
+							placeholder="#{field.getDescription(customEntityInstanceListBean.currentLocale.ISO3Language)}"
+							label="#{field.getDescription(customEntityInstanceListBean.currentLocale.ISO3Language)}">
+							<f:selectItem itemValue="#{null}" itemLabel="" />
+							<f:selectItems value="#{field.listValues.entrySet()}"
+								var="listVal" itemValue="#{listVal.key}"
+								itemLabel="#{listVal.value} (#{listVal.key})" />
+						</p:selectOneMenu>
+					</hftl:decorateFormField>
+				</c:if>
+			</c:forEach>
+
+			<ui:define name="buttons">
+				<p:panel id="customButtons" styleClass="search-panel-actions"
+					style="padding-left: 0px;">
+					<p:button value="#{messages['commons.new']}"
+						outcome="#{customEntityInstanceListBean.newViewName}"
+						rendered="#{customEntityInstanceListBean.repository != null}">
+						<f:param name="cid"
+							value="#{javax.enterprise.context.conversation.id}" />
+						<f:param name="edit" value="true" />
+						<f:param name="cet"
+							value="#{customEntityInstanceListBean.customEntityTemplateCode}" />
+						<f:param name="repo"
+							value="#{customEntityInstanceListBean.repository.code}" />
+					</p:button>
+				</p:panel>
+			</ui:define>
+		</hftl:searchPanel>
+
+		<h:form>
+			<p:panel styleClass="form-panel">
+				<hftl:decorateFormField fieldId="repository"
+					label="#{messages['binary.repository']}">
+					<p:selectOneMenu id="repository"
+						value="#{customEntityInstanceListBean.repository}">
+						<f:selectItem itemLabel="" itemValue="#{null}" />
+						<f:selectItems var="e" itemValue="#{e}" itemLabel="#{e.code}"
+							value="#{customEntityInstanceListBean.listRepositories()}"></f:selectItems>
+						<hftl:objectConverter />
+						<f:attribute name="cid"
+							value="#{javax.enterprise.context.conversation.id}" />
+						<p:ajax update="contentBody :#{p:component('customButtons')}"
+							listener="#{customEntityInstanceListBean.handleRepositoryChangeEvent}">
+						</p:ajax>
+					</p:selectOneMenu>
+				</hftl:decorateFormField>
+			</p:panel>
+		</h:form>
+
+		<p:outputPanel id="contentBody">
+			<p:panel width="100"
+				rendered="#{customEntityInstanceListBean.repository != null}">
+				<h:form prependId="false">
+					<p:messages id="messages" autoUpdate="true" />
+					<p:dataTable id="results_panel"
+						value="#{customEntityInstanceListBean.nativeDataModel}"
+						var="entity" lazy="true" widgetVar="ctTable"
+						paginatorTemplate="{CurrentPageReport} {FirstPageLink} {PreviousPageLink} {PageLinks} {NextPageLink} {LastPageLink} {RowsPerPageDropdown}"
+						currentPageReportTemplate="{startRecord} - {endRecord} of {totalRecords}"
+						paginator="true" rows="10" rowsPerPageTemplate="10,15,20,50"
+						resizableColumns="true" styleClass="custom-grid" reflow="true"
+						liveResize="true" editable="false" rowSelectMode="checkbox"
+						selection="#{customEntityInstanceListBean.selectedValues}"
+						rowIndexVar="rowIdx">
+
+						<p:ajax event="rowSelectCheckbox"
+							update="contentBody customActionButton" />
+						<p:ajax event="rowUnselectCheckbox"
+							update="contentBody customActionButton" />
+						<p:ajax event="rowSelect" update="contentBody customActionButton" />
+						<p:ajax event="rowUnselect"
+							update="contentBody customActionButton" />
+						<p:ajax event="toggleSelect"
+							update="contentBody customActionButton" />
+
+						<p:column id="multiSelect" selectionMode="multiple" width="4%"
+							exportable="false" toggleable="false" selectRow="false" />
+
+						<p:column headerText="#{messages['BusinessEntity.uuid']}"
+							selectRow="false">
+							<h:outputText value="#{entity['uuid']}" />
+						</p:column>
+
+						<p:column headerText="#{messages['BusinessEntity.code']}"
+							sortBy="code" sortable="true"
+							rendered="#{!customEntityInstanceListBean.customEntityTemplate.isStoreAsTable()}">
+							<h:outputText value="#{entity['code']}" styleClass="field-value">
+							</h:outputText>
+						</p:column>
+
+						<p:column headerText="#{messages['BusinessEntity.description']}"
+							sortBy="description" sortable="true"
+							rendered="#{!customEntityInstanceListBean.customEntityTemplate.isStoreAsTable()}">
+							<h:outputText value="#{entity['description']}"
+								styleClass="field-value">
+							</h:outputText>
+						</p:column>
+
+						<p:columns value="#{customEntityInstanceListBean.summaryFields}" var="field" sortBy="#{field.code}">
+
+								<f:facet name="header">
+		         					<h:outputText value="#{field.getDescription(customEntityInstanceListBean.currentLocale.ISO3Language)}" />
+		     					</f:facet>
+								<!--  Date -->
+								<h:outputText value="#{entity[field.code]}"
+									styleClass="field-value"
+									rendered="#{field.fieldType eq CustomFieldTypeEnum.DATE and entity[field.code] != null}">
+									<f:converter binding="#{instantConverter}" />
+									<f:attribute name="format"
+										value="#{field.displayFormat!=null? field.displayFormat:paramBean.dateFormat}" />
+								</h:outputText>
+
+								<h:outputText value="#{entity[field.code]}"
+									styleClass="field-value"
+									rendered="#{field.fieldType eq CustomFieldTypeEnum.DATE and entity[field.code] == null}">
+									<f:converter binding="#{instantConverter}" />
+									<f:attribute name="format"
+										value="#{field.displayFormat!=null? field.displayFormat:paramBean.dateFormat}" />
+								</h:outputText>
+
+								<!--  String, Enum or Long  -->
+								<h:outputText value="#{entity[field.code]}"
+									styleClass="field-value"
+									rendered="#{(field.fieldType eq CustomFieldTypeEnum.STRING or field.fieldType eq CustomFieldTypeEnum.LIST or field.fieldType eq CustomFieldTypeEnum.LONG) and entity[field.code] != null}" />
+
+								<h:outputText
+									value="#{!(field.code eq fn:toLowerCase(field.code))?entity[field.code]:''}"
+									styleClass="field-value"
+									rendered="#{(field.fieldType eq CustomFieldTypeEnum.STRING or field.fieldType eq CustomFieldTypeEnum.LIST or field.fieldType eq CustomFieldTypeEnum.LONG) and entity[field.code] == null}" />
+
+								<!--  Double -->
+								<h:outputText value="#{entity[field.code]}"
+									styleClass="field-value"
+									rendered="#{field.fieldType eq CustomFieldTypeEnum.DOUBLE and entity[field.code] != null}">
+									<f:converter converterId="javax.faces.Double" />
+								</h:outputText>
+
+								<h:outputText value="#{entity[field.code]}"
+									styleClass="field-value"
+									rendered="#{field.fieldType eq CustomFieldTypeEnum.DOUBLE and entity[field.code] == null}">
+									<f:converter converterId="javax.faces.Double" />
+								</h:outputText>
+
+								<!--  Boolean -->
+								<h:outputText value="#{entity[field.code]}"
+									styleClass="field-value" converter="booleanConverter"
+									rendered="#{field.fieldType eq CustomFieldTypeEnum.BOOLEAN and entity[field.code] != null}">
+								</h:outputText>
+
+								<h:outputText value="#{entity[field.code]}"
+									styleClass="field-value" converter="booleanConverter"
+									rendered="#{field.fieldType eq CustomFieldTypeEnum.BOOLEAN and entity[field.code] == null}">
+								</h:outputText>
+
+								<!--  Text Area -->
+								<h:outputText value="#{entity[field.code]}"
+									styleClass="field-value"
+									rendered="#{field.fieldType eq CustomFieldTypeEnum.TEXT_AREA and entity[field.code] != null}">
+								</h:outputText>
+
+								<h:outputText value="#{entity[field.code]}"
+									styleClass="field-value"
+									rendered="#{field.fieldType eq CustomFieldTypeEnum.TEXT_AREA and entity[field.code] == null}">
+								</h:outputText>
+
+								<!--  Long Text -->
+								<h:outputText value="#{entity[field.code]}"
+									styleClass="field-value"
+									rendered="#{field.fieldType eq CustomFieldTypeEnum.LONG_TEXT and entity[field.code] != null}">
+								</h:outputText>
+
+								<h:outputText value="#{entity[field.code]}"
+									styleClass="field-value"
+									rendered="#{field.fieldType eq CustomFieldTypeEnum.LONG_TEXT and entity[field.code] == null}">
+								</h:outputText>
+
+								<h:outputText
+									rendered="#{field.fieldType eq CustomFieldTypeEnum.ENTITY and entity[field.code] != null}"
+									value="#{entity[field.code]}" styleClass="field-value">
+									<f:converter binding="#{entityReferenceConverter}" />
+									<f:attribute name="field" value="#{field}" />
+									<f:attribute name="repository" value="#{bean.repository}" />
+								</h:outputText>
+
+								<h:outputText
+									rendered="#{field.fieldType eq CustomFieldTypeEnum.ENTITY and entity[field.code] == null}"
+									value="Choose a field #{field.fieldType}"
+									styleClass="field-value">
+								</h:outputText>
+
+								<h:outputText
+									rendered="#{field.fieldType eq CustomFieldTypeEnum.CHILD_ENTITY and entity[field.code] != null}"
+									value="#{entity[field.code]}" converter="jsonConverter"
+									styleClass="field-value" />
+
+								<h:outputText
+									rendered="#{field.fieldType eq CustomFieldTypeEnum.CHILD_ENTITY and entity[field.code] == null}"
+									value="Enter the #{field.fieldType}" styleClass="field-value" />
+						</p:columns>
+
+						<p:column headerText="#{messages['commons.actions']}"
+							exportable="false" selectRow="false">
+							<p:tooltip for="editlink" value="#{messages['commons.edit']}"
+								showEffect="slide" hideEffect="slide" />
+							<p:button id="editlink"
+								outcome="#{customEntityInstanceListBean.getEditViewName()}"
+								icon="ui-icon-document">
+								<f:param name="edit" value="true" />
+								<f:param name="cid"
+									value="#{javax.enterprise.context.conversation.id}" />
+								<f:param name="uuid" value="#{entity.uuid}" />
+								<f:param name="cet"
+									value="#{customEntityInstanceListBean.customEntityTemplateCode}" />
+								<f:param name="repo"
+									value="#{customEntityInstanceListBean.repository.code}" />
+							</p:button>
+
+							<p:remoteCommand id="remoteDeleteButton"
+								actionListener="#{customEntityInstanceBean.delete}"
+								name="doDelete" update="contentBody" />
+							<p:tooltip for="deletelink" value="#{messages['commons.delete']}"
+								showEffect="slide" hideEffect="slide" />
+							<p:commandButton id="deletelink" immediate="true"
+								icon="ui-icon-trash" oncomplete="doDelete()">
+								<f:param name="cid"
+									value="#{javax.enterprise.context.conversation.id}" />
+								<f:param name="cet"
+									value="#{customEntityInstanceListBean.customEntityTemplate.code}" />
+								<f:setPropertyActionListener
+									target="#{customEntityInstanceBean.uuid}"
+									value="#{entity.uuid}" />
+								<f:setPropertyActionListener
+									target="#{customEntityInstanceBean.repositoryCode}"
+									value="#{customEntityInstanceListBean.repository.code}" />
+								<f:setPropertyActionListener
+									target="#{customEntityInstanceBean.customEntityTemplateCode}"
+									value="#{customEntityInstanceListBean.customEntityTemplate.code}" />
+								<p:confirm header="#{messages['commons.confirmationHeader']}"
+									message="#{messages['commons.confirmDelete']}"
+									icon="ui-icon-alert" />
+							</p:commandButton>
+						</p:column>
+					</p:dataTable>
+					<h:panelGroup id="customActionButton">
+						<p:commandButton value="#{messages['commons.deleteMultiple']}"
+							immediate="true"
+							action="#{customEntityInstanceListBean.deleteMany()}"
+							icon="ui-icon-trash" update="@form">
+							<p:confirm header="#{messages['commons.confirmationHeader']}"
+								message="#{messages['commons.confirmDelete']}"
+								icon="ui-icon-alert" />
+							<f:ajax render="@all" />
+						</p:commandButton>
+
+						<c:set var="scriptConfirmMessage"
+							value="#{of:format1(messages['entity.customAction.executionActionInList'], customEntityInstanceListBean.selectedValues.size())}" />
+
+						<c:forEach var="customAction"
+							items="#{customFieldDataEntryBean.getCustomActionsInList(customEntityInstanceBean.entity)}">
+							<c:if test="#{customAction != null and customEntityInstanceListBean.hasParameters(customAction)}">
+								<p:commandButton id="ExecuteDialogButton-#{customAction.code}"
+									value="#{customAction.getLabel(customFieldDataEntryBean.currentLocale.ISO3Language)}"
+									action="#{customEntityInstanceListBean.setAction(customAction)}"
+									oncomplete="PF('executeDialog').show()">
+									
+								</p:commandButton>
+							</c:if>
+							
+							<c:if test="#{customAction != null and !customEntityInstanceListBean.hasParameters(customAction)}">
+								<p:commandButton
+									value="#{customAction.getLabel(customFieldDataEntryBean.currentLocale.ISO3Language)}"
+									action="#{customEntityInstanceListBean.executeCustomAction(customEntityInstanceListBean.selectedValues, customAction)}"
+									rendered="#{exp:evaluateToBooleanOneVariable(customAction.applicableOnEl,'entity',customEntityInstanceBean.entity)}"
+									update="contentBody">
+								</p:commandButton>
+							</c:if>
+
+						</c:forEach>
+
+						<p:commandButton id="buttonCsvExportCEI"
+							value="#{messages['commons.exportCsv']}" ajax="false">
+							<l:dataExporter fileType="csv" source="results_panel"
+								fileName="CEI_Export"
+								fileOptions="#{customEntityInstanceBean.csvOptions()}" />
+						</p:commandButton>
+					</h:panelGroup>
+				</h:form>
+			</p:panel>
+		</p:outputPanel>
+		<p:confirmDialog global="true" showEffect="fade" hideEffect="fade">
+			<p:commandButton value="Yes" type="button"
+				styleClass="ui-confirmdialog-yes" icon="pi pi-check" />
+			<p:commandButton value="No" type="button"
+				styleClass="ui-confirmdialog-no" icon="pi pi-times" />
+		</p:confirmDialog>
+		
+		
+		<p:dialog widgetVar="executeDialog" id="executeDialog" header="#{messages['jobInstance.overrideParams']}" dynamic="true" modal="true" styleClass="form-dialog" closeOnEscape="true" width="40%" appendTo="@(body)">
+			<h:form id="executeDialogForm">
+				<p:dataTable id="customParamsDataTable" value="#{customEntityInstanceListBean.overrideParams}" resizableColumns="true" var="mapValues" paginator="false" styleClass="custom-grid" reflow="true">
+					<p:column headerText="#{messages['commons.key']}">
+						<p:inputText value="#{mapValues['key']}" size="30" maxlength="100" />
+					</p:column>
+					<p:column headerText="#{messages['commons.value']}">
+						<p:inputText value="#{mapValues['value']}" size="40" maxlength="1024" />
+					</p:column>
+					<f:facet name="footer">
+						<p:commandButton value="#{messages['action.execute']}" process="@form @parent" partialSubmit="true" partialSubmitFilter=":not([name*='omitFromSubmit'])" update=":contentBody :messages" oncomplete="if (args &amp;&amp; !args.validationFailed) PF('executeDialog').hide()" action="#{customEntityInstanceListBean.executeWithParameters()}"></p:commandButton>
+						<p:commandButton value="#{messages['commons.close']}" oncomplete="PF('executeDialog').hide()"></p:commandButton>
+					</f:facet>
+				</p:dataTable>
+			</h:form>
+		</p:dialog>
+
+	</ui:define>
+
+</ui:composition>

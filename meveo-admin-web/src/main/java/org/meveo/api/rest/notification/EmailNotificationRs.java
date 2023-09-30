@@ -1,0 +1,88 @@
+package org.meveo.api.rest.notification;
+
+import javax.ws.rs.Consumes;
+import javax.ws.rs.DELETE;
+import javax.ws.rs.GET;
+import javax.ws.rs.POST;
+import javax.ws.rs.PUT;
+import javax.ws.rs.Path;
+import javax.ws.rs.PathParam;
+import javax.ws.rs.Produces;
+import javax.ws.rs.QueryParam;
+import javax.ws.rs.core.MediaType;
+
+import io.swagger.annotations.ApiOperation;
+import io.swagger.annotations.ApiParam;
+import org.meveo.api.dto.ActionStatus;
+import org.meveo.api.dto.notification.EmailNotificationDto;
+import org.meveo.api.dto.response.notification.GetEmailNotificationResponseDto;
+import org.meveo.api.rest.IBaseRs;
+import org.meveo.model.notification.EmailNotification;
+
+/**
+ * API for managing {@link EmailNotification}.
+ * @author Edward P. Legaspi | czetsuya@gmail.com
+ * @version 6.7.0
+ **/
+@Path("/notification/email")
+@Consumes({ MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML })
+@Produces({ MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML })
+@ApiOperation("EmailNotificationRs")
+public interface EmailNotificationRs extends IBaseRs {
+
+    /**
+     * Create a new email notification
+     * 
+     * @param postData The email notification's data
+     * @return Request processing status
+     */
+    @POST
+    @Path("/")
+    @ApiOperation(value = "Create email notification")
+    ActionStatus create(@ApiParam("Email notification information") EmailNotificationDto postData);
+
+    /**
+     * Update an existing email notification
+     * 
+     * @param postData The email notification's data
+     * @return Request processing status
+     */
+    @PUT
+    @Path("/")
+    @ApiOperation(value = "Update email notification")
+    ActionStatus update(@ApiParam("Email notification information") EmailNotificationDto postData);
+
+    /**
+     * Find a email notification with a given code 
+     * 
+     * @param notificationCode The email notification's code
+     * @return
+     */
+    @GET
+    @Path("/")
+    @ApiOperation(value = "Find email notification by code")
+    GetEmailNotificationResponseDto find(@QueryParam("notificationCode") @ApiParam("Code of the email notification") String notificationCode);
+
+    /**
+     * Remove an existing email notification with a given code 
+     * 
+     * @param notificationCode The email notification's code
+     * @return Request processing status
+     */
+    @DELETE
+    @Path("/{notificationCode}")
+    @ApiOperation(value = "Remove email notification by code")
+    ActionStatus remove(@PathParam("notificationCode") @ApiParam("Code of the email notification") String notificationCode);
+
+    /**
+     * Create new or update an existing email notification with a given code
+     * 
+     * @param postData The email notification's data
+     * @return Request processing status
+     */
+    @POST
+    @Path("/createOrUpdate")
+    @ApiOperation(value = "Create or update email notification")
+    ActionStatus createOrUpdate(@ApiParam("Email notification information") EmailNotificationDto postData);
+
+}
