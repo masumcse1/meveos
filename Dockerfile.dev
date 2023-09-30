@@ -212,9 +212,11 @@ RUN export HOST_MVN_SETTINGS_PATH=$(mvn help:evaluate -Dexpression=settings.loca
 COPY ${HOST_MVN_SETTINGS_PATH}/settings.xml ${MAVEN_CONFIG}/settings.xml
 
 COPY --chown=jboss:jboss . /tmp/meveo
-RUN cd /tmp/meveo \
+RUN cd /tmp/meveo/deploy.sh 
 # Build meveo source and deploy meveo.war
-  && ./deploy.sh
+  #&& ./deploy.sh
+  # RUN /opt/src/scripts/setup.sh
+  
 #RUN chown jboss:jboss ./meveo-admin-web/target/meveo.war \
 #    && cp ./meveo-admin/web/target/meveo.war ${JBOSS_HOME}/standalone/deployments/
 #RUN rm -Rf /tmp/meveo
