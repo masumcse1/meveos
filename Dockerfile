@@ -8,30 +8,17 @@ FROM maven:3.6-jdk-11-slim AS build-meveo
 RUN apt-get -y update
 RUN apt-get -y install git
  
-ARG SCM="scm:git:ssh://git@github.com:meveo-org/meveo.git"
+ARG SCM="scm:git:ssh://git@github.com:meveo-org/meveos.git"
 ARG BUILD_NUMBER
 
-WORKDIR /usr/src/meveo
+WORKDIR /usr/src/meveos
 
 COPY . .
 
 # Download all dependencies using docker cache
 #RUN mvn dependency:go-offline
 
-RUN --mount=type=cache,target=/root/.m2 \
-    --mount=type=cache,target=/usr/src/meveo/target/classes \
-    --mount=type=cache,target=/usr/src/meveo/meveo-admin-ejbs/target/classes \
-    --mount=type=cache,target=/usr/src/meveo/meveo-admin-web/target/classes \
-    --mount=type=cache,target=/usr/src/meveo/meveo-annotations/target/classes \
-    --mount=type=cache,target=/usr/src/meveo/meveo-api/target/classes \
-    --mount=type=cache,target=/usr/src/meveo/meveo-api-dto/target/classes \
-    --mount=type=cache,target=/usr/src/meveo/meveo-el-resolver/target/classes \
-    --mount=type=cache,target=/usr/src/meveo/meveo-json-schema/target/classes \
-    --mount=type=cache,target=/usr/src/meveo/meveo-model/target/classes \
-    --mount=type=cache,target=/usr/src/meveo/meveo-reporting/target/classes \
-    --mount=type=cache,target=/usr/src/meveo/meveo-security/target/classes \
-    --mount=type=cache,target=/usr/src/meveo/meveo-ws/target/classes \
-    mvn package -Dscm.url=${SCM} -DskipTests -Dmaven.test.skip=true
+mvn package -Dscm.url=${SCM} -DskipTests -Dmaven.test.skip=true
 
 ##################################################################
 #####                Build meveo docker image                #####
@@ -225,10 +212,10 @@ COPY --chown=jboss:jboss docker/configs/cli ${JBOSS_HOME}/cli
 COPY --chown=jboss:jboss docker/configs/props ${JBOSS_HOME}/props
 
 ### Changelog files for Liquibase
-COPY --chown=jboss:jboss --from=build-meveo /usr/src/meveo/meveo-model/src/main/db_resources /opt/jboss/liquibase/db_resources
+COPY --chown=jboss:jboss --from=build-meveo /usr/src/meveos/meveo-model/src/main/db_resources /opt/jboss/liquibase/db_resources
 
 ### meveo.war
-COPY --chown=jboss:jboss --from=build-meveo /usr/src/meveo/meveo-admin-web/target/meveo.war ${JBOSS_HOME}/standalone/deployments/meveo.war
+COPY --chown=jboss:jboss --from=build-meveo /usr/src/meveos/meveo-admin-web/target/meveo.war ${JBOSS_HOME}/standalone/deployments/meveo.war
 
 # Ensure signals are forwarded to the JVM process correctly for graceful shutdown
 ENV LAUNCH_JBOSS_IN_BACKGROUND true
